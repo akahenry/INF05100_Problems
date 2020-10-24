@@ -37,8 +37,8 @@ with open(output_filename, 'w') as dat_file:
                 dat_file.write('param E := \n')
             elif line.startswith('e '):
                 parts = line.replace('\n', '').split(' ')
-                first_vertex = parts[1]
-                second_vertex = parts[2]
+                first_vertex = int(parts[1]) - 1
+                second_vertex = int(parts[2]) - 1
 
                 dat_file.write(f'{first_vertex} {second_vertex} 1\n')
     dat_file.write(';\n')
