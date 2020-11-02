@@ -4,9 +4,12 @@ import argparse
 import sys
 from pprint import pprint
 import time
+# from .genetic import genetic
 
 def main(args):
     filename = (args.file[0].name)
+    seed = (args.seed)
+    generations = (args.generations)
 
     graph = {}
     prev_vertex = -1
@@ -33,23 +36,30 @@ def main(args):
               else:
                 graph[vertex2] = [vertex1]
 
-    # start = time.perf_counter_ns()
+
+    pprint(graph)
+    start = time.perf_counter_ns()
     # genetic(graph, ...)
-    # end = time.perf_counter_ns()
-    # print("EXECUTION TIME")
-    # print(end - start)
+    end = time.perf_counter_ns()
+    print("EXECUTION TIME (ns)")
+    print(end - start)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Uses Genetic Algorithm to find solution for VC.',
-        usage='main.py [-h] [--file myinstance.txt]')
+        usage='main.py [-h] [--file myinstance.txt] [--seed 1234ABCD] [--epochs n]')
 
     parser.add_argument('-f', '--file', type=open, nargs=1,
                         help='a file containing the instance',
                         required=True)
+    
+    parser.add_argument('-s', '--seed', type=open, nargs=1,
+                        help='a seed for random function')
+    
+    parser.add_argument('-g', '--generations', type=open, nargs=1,
+                        help='number of generations to execute')
 
     args = parser.parse_args()
-    print(args.file[0].name)
 
     main(args)
