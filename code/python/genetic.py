@@ -2,182 +2,202 @@ import random
 import copy
 import numpy as np
 from pprint import pprint
+from typing import List, Tuple, Dict
+from math import ceil
+from hashlib import sha1
 
-def genetic(best_n, mutation_chance, weights, pop_size, run_episode_fn):
-  # indice de corte
-  # crossover_index = random.randrange(len(weights))
-  # crossover_index = len(weights) // 2
-  # print("crossover_index = {}".format(crossover_index))
-  
-  mutation_chance_increase = 0
+class Crossover:
+	@staticmethod
+	def single_point_crossover(solution1: List[Tuple[str, int]], solution2: List[Tuple[str, int]], point: int) -> Tuple[Tuple[str, int], Tuple[str, int]]:
+		"""
+		Returns two children solutions based on a single-point crossover between the two given solutions.
 
-  initial_population = generate_first_generation(weights, pop_size)
-  # print("INITIAL POPULATION = {}".format(initial_population))
-  
-  # pprint("initial population")
-  # print(weights)
-  # for p in initial_population:
-  #   print(p)
+		Args:
+			solution1: One solution to be used in crossover with size N.
+			solution2: Another solution to be used in crossover with size N.
+			point: An integer in [0, N] representing the point to split the solutions.
 
-  population_best = []
-  parents = []
-  parents_fitness = []
-  past_generation_best = [0]
+		Returns:
+			new_solution1, new_solution2: A tuple with two solutions containing the two ways to split and merging the parents using the given point.
+		"""
+		A = solution1[:point].append(solution2[point:])
+		B = solution2[:point].append(solution1[point:])
 
-  get_individual = lambda a : [b[1] for b in a]
+		return A, B
 
-  # 20 generations
-  for g in range(100):
-    print("G = {}".format(g))
-    if(g == 0):
-      parents = initial_population[:]
-      for p in parents:
-        # calculates individual value
-        p_fitness = run_episode_fn(p)
-        # print("p = {} => {}".format(p, p_fitness))
-        parents_fitness.append([p_fitness, p])
-      # print("FIRST GEN FITNESS")
-      # print(parents_fitness)
-      print("FIRST_GEN_AVERAGE = {}".format(sum([f[0] for f in parents_fitness])/len(parents_fitness)))
-      print("FIRST_GEN_BEST = {}".format(sorted(parents_fitness, key=lambda x: x[0], reverse=True)[0]))
-      parents = get_individual(parents_fitness)
-    else:
-      # print(population_best)
-      print("PAST_GEN_AVERAGE = {}".format(sum([f[0] for f in population_best])/len(population_best)))
-      print("PAST GENERATION BEST = {}".format(population_best[0]))
-      past_generation_best = population_best[0]
-      parents_fitness = population_best[:best_n]
-      # print("BEST FROM COPY = {}".format(parents_fitness[0]))
-      parents = get_individual(parents_fitness)[:best_n]
-      # print("BEST FROM PARENTS = {}".format(parents[0]))
+	@staticmethod
+	def multi_point_crossover(solution1: List[Tuple[str, int]], solution2: List[Tuple[str, int]], points: List[int]) -> Tuple[Tuple[str, int], Tuple[str, int]]:
+		"""
+		Returns two children solutions based on a multi-point crossover between the two given solutions.
 
-    # loop gera filhos
-    # 2 children per couple
+		Args:
+			solution1: One solution to be used in crossover with size N.
+			solution2: Another solution to be used in crossover with size N.
+			points: A list with integers in [0, N] representing the points to split the solutions.
 
-    children = []
-    parents_indexes = [x for x in range(len(parents))]
-    # print(parents_indexes)
-    for i in range(len(parents) // 2):
-      # print("i = {}".format(i))
+		Returns:
+			new_solution1, new_solution2: A tuple with two solutions containing the two ways to split and merging the parents using the given points.
+		"""
+		A = solution1
+		B = solution2
 
-      # parent1 = total_population[random.randrange(len(parents))]
-      # parent2 = total_population[random.randrange(len(parents))]
+		for p in points:
+			A, B = Crossover.single_point_crossover(A, B, p)
 
-      # parent1, parent2 = random.sample(parents, 2)
-      parent1_index = np.random.choice(parents_indexes, size=None, replace=False,p=None)
-      parents_indexes.remove(parent1_index)
-      parent2_index = np.random.choice(parents_indexes, size=None, replace=False,p=None)
-      parents_indexes.remove(parent2_index)
-      parent1 = parents[parent1_index]
-      parent2 = parents[parent2_index]
-      # print("{}\n{}".format(parent1_index, parent2_index))
-      
-      
-      # if(i == 0):
-      # print("p1 = {}".format(parent1))
-      # print("p2 = {}".format(parent2))
+		return A, B
 
-      # parent1_first_half_genes = parent1[:crossover_index]
-      # parent1_second_half_genes = parent1[crossover_index:]
-      # parent2_first_half_genes = parent2[:crossover_index]
-      # parent2_second_half_genes = parent2[crossover_index:]
+	@staticmethod
+	def uniform_crossover(solution1: List[Tuple[str, int]], solution2: List[Tuple[str, int]], chances: List[float], threshold: float=0.5) -> Tuple[Tuple[str, int], Tuple[str, int]]:
+		"""
+		Returns two children solutions based on a uniform crossover between the two given solutions.
 
-      first_child = []
-      # first_child.extend(parent1_first_half_genes)
-      # first_child.extend(parent2_second_half_genes)
-      for w in range(len(parents[0])):
-        if(w % 2 == 0):
-          first_child.append(parent1[w])
-        else:
-          first_child.append(parent2[w])
+		Args:
+			solution1: One solution to be used in crossover with size N.
+			solution2: Another solution to be used in crossover with size N.
+			chances: A list with floats in [0, 1] representing the chances to a point in the solution be swapped.
+			threshold: A float in [0, 1] representing the number which a specific chance must be greater to not be swapped.
 
-      # if(i==0):
-      #   print("first_child = {}".format(first_child))
+		Returns:
+			new_solution1, new_solution2: A tuple with two solutions containing the resulting solutions after the swaps.
+		"""
+		A = solution1
+		B = solution2
 
-      will_mutate = random.random() <= mutation_chance + mutation_chance_increase
-      if(will_mutate):
-        # print('MUTATE FIRST CHILD')
-        mutation_index = random.randrange(len(first_child))
-        first_child[mutation_index] = random.uniform(-0.3, 0.3) * first_child[mutation_index]
+		for i in range(len(chances)):
+			if chances[i] < threshold:
+				temp = A[i]
+				A[i] = B[i]
+				B[i] = temp
 
-      second_child = []
-      # second_child.extend(parent2_first_half_genes)
-      # second_child.extend(parent1_second_half_genes)
-      for w in range(len(parents[0])):
-        if(w % 2 == 0):
-          second_child.append(parent2[w])
-        else:
-          second_child.append(parent1[w])
-      
-      # if(i==0):
-      #   print("second_child = {}".format(second_child))
+		return A, B
 
-      will_mutate = random.random() <= mutation_chance + mutation_chance_increase
-      if(will_mutate):
-        # print('MUTATE SECOND CHILD')
-        mutation_index = random.randrange(len(second_child))
-        second_child[mutation_index] = random.random() * second_child[mutation_index]
+class GeneticAlgorithm:
+	UNIQUE_POINT_CROSSOVER = 1
+	MULTI_POINT_CROSSOVER = 2
+	UNIFORM_CROSSOVER = 3
 
-      children.append(first_child)
-      children.append(second_child)
+	MAXIMIZE = 1
+	MINIMIZE = 2
 
-    children_fitness = []
-    
-    for c in children:
-      # calculates individual value
-      c_fitness = run_episode_fn(c)
-      # print("p = {} => {}".format(p, p_fitness))
-      children_fitness.append([c_fitness, c])
-    
-    # print("\n\nPAIS = {}\n".format(parents_fitness))
-    # print("FILHOS = {}\n\n".format(children_fitness))
-    
-    total_population = parents_fitness + children_fitness
+	def __init__(self, initial_solution, solution_size, elite_size, mutation_chance, mutation_chance_increase, population_size, rng_seed, fitness_function, order, **kwargs):
+		self.initial_solution = initial_solution
+		self.solution_size = solution_size
+		self.elite_size = elite_size
+		self.mutation_chance = mutation_chance
+		self.mutation_chance_increase = mutation_chance_increase
+		self.population_size = population_size
+		self.seed = rng_seed
+		self.fitness_function = fitness_function
+		if order == GeneticAlgorithm.MAXIMIZE:
+			self.order = True
+		else:
+			self.order = False
+		self.default_fitness_args = kwargs
 
-    # print("TOTAL_POPULATION = {}".format(total_population))
+		random.seed(self.seed)
+		np.random.seed(self.seed)
 
-    population_best = sorted(total_population,key = lambda x: x[0], reverse=True)[:best_n]
-    # print("population_best SORTED = {}".format(population_best))
-    
-    # print("current best = {}\nprevious best = {}".format(population_best[0], past_generation_best))
+	def run(self, crossover_type, max_iterations, **kwargs):
+		population = first_generation(self.population_size, self.solution_size, 0)
 
+		for iteration in range(max_iterations):
+			print(f'Iteration: {iteration}')
+			values = []
 
-    if(population_best[0][0] <= past_generation_best[0] and mutation_chance + mutation_chance_increase < 0.20):
-      # print("current best = {}\nprevious best = {}".format(population_best[0], past_generation_best))
-      print("increasing mutation_chance by 1%")
-      mutation_chance_increase += 0.01
-      print("new mutation_chance_increase = {}".format(mutation_chance_increase))
-      # break
-    elif(population_best[0][0] > past_generation_best[0] and mutation_chance_increase > 0):
-      mutation_chance_increase = 0
+			for solution in population:
+				values.append((self.fitness_function(solution, **self.default_fitness_args), solution))
 
-    # print("BEST POP: {}".format(population_best))
+			elite = [x for _, x in sorted(values, key=lambda x: x[0], reverse=self.order)]
+			print(f'Best value: {sorted(values,  key=lambda x: x[0], reverse=self.order)[0][0]}')
+			parents = []
+			index = 0
 
-  print("LAST AVERAGE = {}".format(sum([f[0] for f in population_best])/len(population_best)))
-  print("LAST BEST = {}".format(population_best[0]))
-  print('BEST {}'.format(population_best[0]))
-  return population_best[0][1]
+			for solution in elite:
+				if index < self.elite_size:
+					parents.append(solution)
 
-def generate_first_generation(values, pop_size):
+				index += 1
 
-  # values é inicialmente random ou vem de arquivo
-  # gerar perturbações nesses valores para gerar a população inicial
+			new_population = parents
 
-  population = []
-  for i in range(pop_size):
-    disturbed_values = []
-    for v in values:
-      # altera todos os valores da solução em até 30%
-      if(-0.0001 <= v <= 0.0001):
-        initial_v = v + random.uniform(-1, 1)
-      else:
-        initial_v = v
-      disturbed_values.append(v + initial_v * random.uniform(-0.3, 0.3))
+			for index in range(ceil(self.population_size / 2)):
+				solution1, solution2 = self.crossover(random.choice(parents), random.choice(parents), crossover_type, **kwargs)
+				solution1, solution2 = self.mutation(solution1), self.mutation(solution2)
 
-    population.append(disturbed_values)
-    
-    # sobrescreve o primeiro valor gerado com os valores originais
-    # population[0] = np.ndarray.tolist(values)
-    population[0] = values[:]
+				new_population.append(solution1)
+				new_population.append(solution2)
+			
+			population = new_population[:self.population_size]
 
-  return population
+	def crossover(self, solution1: Dict[str, int], solution2: Dict[str, int], crossover_type: int, **kwargs) -> Tuple[Dict[str, int], Dict[str, int]]:
+		solution1_as_list = list(solution1.items())
+		solution2_as_list = list(solution2.items())
+
+		if crossover_type == GeneticAlgorithm.UNIQUE_POINT_CROSSOVER:
+			try:
+				point = kwargs['point']
+			except KeyError:
+				point = len(solution1_as_list) // 2
+
+			solution1_as_list, solution2_as_list = Crossover.single_point_crossover(solution1_as_list, solution2_as_list, point)
+			return dict(solution1_as_list), dict(solution2_as_list)
+		elif crossover_type == GeneticAlgorithm.MULTI_POINT_CROSSOVER:
+			try:
+				points = kwargs['points']
+			except KeyError:
+				points = [len(solution1_as_list) // 2]
+
+			solution1_as_list, solution2_as_list = Crossover.multi_point_crossover(solution1_as_list, solution2_as_list, points)
+			return dict(solution1_as_list), dict(solution2_as_list)
+		elif crossover_type == GeneticAlgorithm.UNIFORM_CROSSOVER:
+			try:
+				chances = kwargs['chances']
+				threshold = kwargs['threshold']
+			except KeyError:
+				threshold = 0.5
+				chances = [random.uniform(0, 1) for i in range(len(solution1_as_list))]
+
+			solution1_as_list, solution2_as_list = Crossover.uniform_crossover(solution1_as_list, solution2_as_list, chances, threshold)
+			return dict(solution1_as_list), dict(solution2_as_list)
+		
+		raise Exception('Crossover type not implemented')
+
+	def mutation(self, solution, mutation_chance: float=None, seed: int=None):
+		if mutation_chance == None:
+			mutation_chance = self.mutation_chance
+
+		if seed == None:
+			seed = self.seed
+
+		np.random.seed(seed)
+		chances = np.random.rand(self.solution_size)
+
+		index = 0
+		for key in solution:
+			random_value = np.random.randint(self.solution_size)
+			while random_value == solution[key]:
+				random_value = np.random.randint(self.solution_size)
+
+			solution[key] = random_value if chances[index] > (1 - mutation_chance) else solution[key]
+			index += 1
+
+		return solution
+
+def first_generation(population_size, vertices_number, change_percentual, base_solution = None):
+	population = []
+
+	if base_solution == None:
+		base_solution: Dict[str, int] = {}
+		for vertex in range(vertices_number):
+			base_solution[str(vertex)] = vertex
+
+	for _ in range(population_size):
+		solution: Dict[str, int] = {}
+
+		for vertex in range(vertices_number):
+			vertex = str(vertex)
+			solution[vertex] = int(np.random.normal(loc=base_solution[vertex], scale=base_solution[vertex]*change_percentual))
+
+		population.append(solution)
+
+	return population
