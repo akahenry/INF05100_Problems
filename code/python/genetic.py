@@ -91,7 +91,7 @@ class GeneticAlgorithm:
 	MAXIMIZE = GeneticTypeFitnessFunction.MAXIMIZE
 	MINIMIZE = GeneticTypeFitnessFunction.MINIMIZE
 
-	def __init__(self, initial_solution: Dict(str, int), solution_size: int, population_size: int, elite_size: int, mutation_chance: float, rng_seed: int, order: GeneticTypeFitnessFunction, fitness_function, **kwargs):
+	def __init__(self, initial_solution: Dict[str, int], solution_size: int, population_size: int, elite_size: int, mutation_chance: float, rng_seed: int, order: GeneticTypeFitnessFunction, fitness_function, **kwargs):
 		"""
 		Returns an object of GeneticAlgorithm with all the necessary attributes to run it.
 
