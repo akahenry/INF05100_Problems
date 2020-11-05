@@ -5,6 +5,7 @@ import sys
 import time
 
 from genetic import GeneticAlgorithm
+from typing import Dict, List
 
 
 def main(args):
@@ -41,12 +42,27 @@ def main(args):
                                population_size=1000, rng_seed=seed, fitness_function=fitness, order=GeneticAlgorithm.MINIMIZE, graph=graph, num_vertices=int(num_vertices))
 
     start = time.perf_counter_ns()
-    genetic.run(GeneticAlgorithm.UNIFORM_CROSSOVER, 500)
+    genetic.run(max_iterations=500, crossover_type=GeneticAlgorithm.UNIFORM_CROSSOVER)
     end = time.perf_counter_ns()
     print(f'EXECUTION TIME: {(end-start)/(10**9)} seconds.')
 
 
-def fitness(solution, graph, num_vertices):
+def fitness(solution: Dict[str, int], graph: Dict[str, List[str]], num_vertices: int) -> int:
+    """
+	Returns a value for a specific solution of VC problem in a graph.
+
+	Complexity: O(v^2) where v is the number of vertices.
+
+	Args:
+		solution: A solution for the VC problem.
+        graph: The graph represented with a dictionary whose keys are the nodes of the graph. For each key, 
+            the corresponding value is a list containing the nodes that are connected by a direct arc from this node.
+		num_vertices: The number of vertices of the graph.
+
+	Returns:
+		value: The number of colors used in this solution. 
+            If the solution breaks at least one rule of this problem, then it returns 2*v (where v is the number of vertices). 
+	"""
     color_set = {}
 
     for vertex in solution:

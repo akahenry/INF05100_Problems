@@ -5,12 +5,24 @@ from pprint import pprint
 from typing import List, Tuple, Dict
 from math import ceil
 from hashlib import sha1
+from enum import Enum
+
+class CrossoverMethod(Enum):
+	UNIQUE_POINT_CROSSOVER = 1
+	MULTI_POINT_CROSSOVER = 2
+	UNIFORM_CROSSOVER = 3
+
+class GeneticTypeFitnessFunction(Enum):
+	MAXIMIZE = 1
+	MINIMIZE = 2
 
 class Crossover:
 	@staticmethod
 	def single_point_crossover(solution1: List[Tuple[str, int]], solution2: List[Tuple[str, int]], point: int) -> Tuple[Tuple[str, int], Tuple[str, int]]:
 		"""
 		Returns two children solutions based on a single-point crossover between the two given solutions.
+
+		Complexity: O(n), with n being the solution size.
 
 		Args:
 			solution1: One solution to be used in crossover with size N.
@@ -29,6 +41,8 @@ class Crossover:
 	def multi_point_crossover(solution1: List[Tuple[str, int]], solution2: List[Tuple[str, int]], points: List[int]) -> Tuple[Tuple[str, int], Tuple[str, int]]:
 		"""
 		Returns two children solutions based on a multi-point crossover between the two given solutions.
+
+		Complexity: O(n^2), where n is the solution size.
 
 		Args:
 			solution1: One solution to be used in crossover with size N.
@@ -51,6 +65,8 @@ class Crossover:
 		"""
 		Returns two children solutions based on a uniform crossover between the two given solutions.
 
+		Complexity: O(n), where n is the solution size.
+
 		Args:
 			solution1: One solution to be used in crossover with size N.
 			solution2: Another solution to be used in crossover with size N.
@@ -72,33 +88,87 @@ class Crossover:
 		return A, B
 
 class GeneticAlgorithm:
-	UNIQUE_POINT_CROSSOVER = 1
-	MULTI_POINT_CROSSOVER = 2
-	UNIFORM_CROSSOVER = 3
+	MAXIMIZE = GeneticTypeFitnessFunction.MAXIMIZE
+	MINIMIZE = GeneticTypeFitnessFunction.MINIMIZE
 
-	MAXIMIZE = 1
-	MINIMIZE = 2
+	def __init__(self, initial_solution: Dict(str, int), solution_size: int, population_size: int, elite_size: int, mutation_chance: float, rng_seed: int, order: GeneticTypeFitnessFunction, fitness_function, **kwargs):
+		"""
+		Returns an object of GeneticAlgorithm with all the necessary attributes to run it.
 
-	def __init__(self, initial_solution, solution_size, elite_size, mutation_chance, mutation_chance_increase, population_size, rng_seed, fitness_function, order, **kwargs):
+		Complexity: O(1)
+
+		Args:
+			initial_solution: The first solution to be used as mean and generate the first population.
+			solution_size: The length of the solution.
+			population_size: The number of solutions for generation (must be greater than 0).
+			elite_size: The length of the elite (must be less or equal than population_size).
+			mutation_chance: The chance to a solution mutate for generation (must be in [0, 1]).
+			rng_seed: The seed to be used in random numbers generation.
+			order: A flag that sets if the algorithm wants to maximize ou minimize the fitness value.
+				- GeneticTypeFitnessFunction.MAXIMIZE: maximize the fitness function.
+				- GeneticTypeFitnessFunction.MINIMIZE: minimize the fitness function.
+			fitness_function: The function to calculate the fitness value for each solution.
+			**kwargs: The arguments for the given fitness function.
+
+		Returns:
+			genetic: An object of GeneticAlgorithm.
+		"""
 		self.initial_solution = initial_solution
 		self.solution_size = solution_size
-		self.elite_size = elite_size
-		self.mutation_chance = mutation_chance
-		self.mutation_chance_increase = mutation_chance_increase
-		self.population_size = population_size
-		self.seed = rng_seed
-		self.fitness_function = fitness_function
-		if order == GeneticAlgorithm.MAXIMIZE:
-			self.order = True
-		else:
-			self.order = False
-		self.default_fitness_args = kwargs
 
+		if population_size > 0:
+			self.population_size = population_size  
+		else: 
+			raise Exception('Population size must be greater than 0.')
+
+		if population_size >= elite_size:
+			self.elite_size = elite_size
+		else:
+			raise Exception('Elite size must be less or equal than population size.')
+
+		if 0 <= mutation_chance <= 1:
+			self.mutation_chance = mutation_chance
+		else:
+			raise Exception('Mutation chance must be in [0, 1].')
+
+		self.seed = rng_seed
 		random.seed(self.seed)
 		np.random.seed(self.seed)
 
-	def run(self, crossover_type, max_iterations, **kwargs):
-		population = first_generation(self.population_size, self.solution_size, 0)
+		if order == GeneticTypeFitnessFunction.MAXIMIZE:
+			self.order = True
+		else:
+			self.order = False
+
+		self.fitness_function = fitness_function
+		self.default_fitness_args = kwargs
+
+	def run(self, max_iterations: int, crossover_type: CrossoverMethod, **kwargs) -> Dict[str, int]:
+		"""
+		Returns the best solution found after all iterations.
+
+		Complexity: O(n*s + i*n*f + i*e), where n is the population size, s is the solution size, 
+			i is the maximum number of iterations, f is the complexity of the fitness function and e is the elite size.
+
+		Args:
+			solution_size: Defines the number of iterations to be generate.
+			crossover_type: Tells the crossover type to be used.
+				- CrossoverMethod.UNIQUE_POINT_CROSSOVER: uses the unique point crossover.
+				- CrossoverMethod.MULTI_POINT_CROSSOVER: uses the multi point crossover.
+				- CrossoverMethod.UNIFORM_CROSSOVER: uses the uniform crossover.
+			**kwargs: The arguments for the given crossover type.
+				- CrossoverMethod.UNIQUE_POINT_CROSSOVER:
+					• point: An integer in [0, N] representing the point to split the solutions.
+				- CrossoverMethod.MULTI_POINT_CROSSOVER:
+					• points: A list with integers in [0, N] representing the points to split the solutions.
+				- CrossoverMethod.UNIFORM_CROSSOVER:
+					• chances: A list with floats in [0, 1] representing the chances to a point in the solution be swapped.
+					• threshold: A float in [0, 1] representing the number which a specific chance must be greater to not be swapped.
+
+		Returns:
+			solution: The best found solution.
+		"""
+		population = first_generation(self.population_size, self.solution_size, 0, self.initial_solution)
 
 		for iteration in range(max_iterations):
 			print(f'Iteration: {iteration}')
@@ -129,11 +199,37 @@ class GeneticAlgorithm:
 			
 			population = new_population[:self.population_size]
 
+		return population[0]
+
 	def crossover(self, solution1: Dict[str, int], solution2: Dict[str, int], crossover_type: int, **kwargs) -> Tuple[Dict[str, int], Dict[str, int]]:
+		"""
+		Returns two solutions generated based on two parents solutions.
+
+		Complexity: O(n^2)
+
+		Args:
+			solution1: First parent solution.
+			solution2: Second parent solution.
+			crossover_type: Tells the crossover type to be used.
+				- CrossoverMethod.UNIQUE_POINT_CROSSOVER: uses the unique point crossover.
+				- CrossoverMethod.MULTI_POINT_CROSSOVER: uses the multi point crossover.
+				- CrossoverMethod.UNIFORM_CROSSOVER: uses the uniform crossover.
+			**kwargs: The arguments for the given crossover type.
+				- CrossoverMethod.UNIQUE_POINT_CROSSOVER:
+					• point: An integer in [0, N] representing the point to split the solutions.
+				- CrossoverMethod.MULTI_POINT_CROSSOVER:
+					• points: A list with integers in [0, N] representing the points to split the solutions.
+				- CrossoverMethod.UNIFORM_CROSSOVER:
+					• chances: A list with floats in [0, 1] representing the chances to a point in the solution be swapped.
+					• threshold: A float in [0, 1] representing the number which a specific chance must be greater to not be swapped.
+
+		Returns:
+			new_solution1, new_solution2: The two new solutions generated.
+		"""
 		solution1_as_list = list(solution1.items())
 		solution2_as_list = list(solution2.items())
 
-		if crossover_type == GeneticAlgorithm.UNIQUE_POINT_CROSSOVER:
+		if crossover_type == CrossoverMethod.UNIQUE_POINT_CROSSOVER:
 			try:
 				point = kwargs['point']
 			except KeyError:
@@ -141,7 +237,7 @@ class GeneticAlgorithm:
 
 			solution1_as_list, solution2_as_list = Crossover.single_point_crossover(solution1_as_list, solution2_as_list, point)
 			return dict(solution1_as_list), dict(solution2_as_list)
-		elif crossover_type == GeneticAlgorithm.MULTI_POINT_CROSSOVER:
+		elif crossover_type == CrossoverMethod.MULTI_POINT_CROSSOVER:
 			try:
 				points = kwargs['points']
 			except KeyError:
@@ -149,7 +245,7 @@ class GeneticAlgorithm:
 
 			solution1_as_list, solution2_as_list = Crossover.multi_point_crossover(solution1_as_list, solution2_as_list, points)
 			return dict(solution1_as_list), dict(solution2_as_list)
-		elif crossover_type == GeneticAlgorithm.UNIFORM_CROSSOVER:
+		elif crossover_type == CrossoverMethod.UNIFORM_CROSSOVER:
 			try:
 				chances = kwargs['chances']
 				threshold = kwargs['threshold']
@@ -162,7 +258,20 @@ class GeneticAlgorithm:
 		
 		raise Exception('Crossover type not implemented')
 
-	def mutation(self, solution, mutation_chance: float=None, seed: int=None):
+	def mutation(self, solution: Dict[str, int], mutation_chance: float=None, seed: int=None):
+		"""
+		Returns a solution generated based on the given solution with some changes in its values.
+
+		Complexity: O(n) usually, but in a specific case it doesn't stop (almost 0 chance).
+
+		Args:
+			solution: Solution to be used as base.
+			mutation_chance: Chance to change value for each key in the solution.
+			seed: The seed to be used in random numbers generation.
+
+		Returns:
+			new_solution: A solution with a few changes based on mutation chance.
+		"""
 		if mutation_chance == None:
 			mutation_chance = self.mutation_chance
 
@@ -184,6 +293,21 @@ class GeneticAlgorithm:
 		return solution
 
 def first_generation(population_size, vertices_number, change_percentual, base_solution = None):
+	"""
+	Returns a population of solutions generated based on the given solution with some changes in its values.
+	If base solution is None, then it will be set to have one color for vertex (fitness value is equal than the number of vertices).
+
+	Complexity: O(n*v) where n is the population size and v is the number of vertices.
+
+	Args:
+		population_size: The number of solutions to be generated.
+		vertices_number: The number of vertices of the graph.
+		change_percentual: How much a value will be changed for every key in the base solution.
+		base_solution: Solution to be used as base.
+
+	Returns:
+		population: A population with a few changes based on the base solution.
+	"""
 	population = []
 
 	if base_solution == None:
