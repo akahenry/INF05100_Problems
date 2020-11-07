@@ -445,8 +445,10 @@ class GeneticAlgorithm2:
 			for neighbohr in self.graph[str(vertex)]:
 				if(individual_color == individual[int(neighbohr)]):
 					broken_restrictions += 1
+		
+		number_of_colors = len(set(individual))
 
-		return broken_restrictions
+		return number_of_colors + (broken_restrictions + self.num_vertices)
 
 	def gen_first_generation(self, population_size, vertices_number):
 		"""

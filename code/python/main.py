@@ -45,7 +45,7 @@ def main(args):
 
     start = time.perf_counter_ns()
     # genetic.run(max_iterations=500, crossover_type=CrossoverMethod.UNIFORM_CROSSOVER)
-    num_colors = genetic2.run(max_iterations=1000)
+    num_colors = genetic2.run(max_iterations=5000)
     print("num colors = {}".format(num_colors))
     end = time.perf_counter_ns()
     print(f'EXECUTION TIME: {(end-start)/(10**9)} seconds.')
