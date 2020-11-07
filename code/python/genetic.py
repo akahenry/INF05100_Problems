@@ -117,7 +117,7 @@ class GeneticAlgorithm:
 		self.solution_size = solution_size
 
 		if population_size > 0:
-			self.population_size = population_size  
+			self.population_size = population_size	
 		else: 
 			raise Exception('Population size must be greater than 0.')
 
@@ -178,7 +178,7 @@ class GeneticAlgorithm:
 				values.append((self.fitness_function(solution, **self.default_fitness_args), solution))
 
 			elite = [x for _, x in sorted(values, key=lambda x: x[0], reverse=self.order)]
-			print(f'Best value: {sorted(values,  key=lambda x: x[0], reverse=self.order)[0][0]}')
+			print(f'Best value: {sorted(values,	key=lambda x: x[0], reverse=self.order)[0][0]}')
 			parents = []
 			index = 0
 
@@ -325,3 +325,146 @@ def first_generation(population_size, vertices_number, change_percentual, base_s
 		population.append(solution)
 
 	return population
+
+class GeneticAlgorithm2:
+	def __init__(self, max_iterations: int, population_size: int, rng_seed: int, graph):
+
+		self.graph = graph
+		self.max_iterations = max_iterations
+		self.num_vertices = len(graph.keys())
+		self.elite_size = population_size // 2
+
+		if population_size > 0:
+			self.population_size = population_size	
+		else: 
+			raise Exception('Population size must be greater than 0.')
+
+		self.seed = rng_seed
+		random.seed(self.seed)
+		np.random.seed(self.seed)
+
+	def run(self, max_iterations: int) -> Dict[str, int]:
+		"""
+		Returns the best solution found after all iterations.
+		"""
+  
+		print(self.population_size, self.num_vertices)
+		population = self.gen_first_generation(self.population_size, self.num_vertices)
+
+		for iteration in range(max_iterations):
+			print(f'Iteration: {iteration}')
+
+			population_fitness = []
+			for p in population:
+				fitness = self.calc_fitness(p)
+				population_fitness.append([fitness, p])
+  
+			new_population = []
+			sorted_fitness = sorted(population_fitness, key = lambda x: x[0])
+			print('Best so far = {}'.format(sorted_fitness[0]))
+			best_individuals = [sorted_fitness[i][1] for i in range(len(population) // 2)]
+			new_population = best_individuals[:]
+			if(sorted_fitness[0][0] >= 4):
+					parent1, parent2 = self.parentSelection1(best_individuals)
+					child = self.crossover(parent1, parent2)
+					child = self.mutation1(child)
+					new_population.append(child)
+			else:
+					parent1, parent2 = self.parentSelection2(best_individuals)
+					child = self.crossover(parent1, parent2)
+					child = self.mutation2(child)
+					new_population.append(child)
+
+			new_population.extend(self.gen_first_generation(len(population) // 2 - 1, self.num_vertices))
+			population = new_population[:]
+
+		return len(set(sorted_fitness[0][1]))
+
+	def parentSelection1(self, population):
+		parent1Temp, parent2Temp = random.choices(population, k=2)
+		parent1_fitness = self.calc_fitness(parent1Temp)
+		parent2_fitness = self.calc_fparent1_fitness = self.calc_fitness(parent2Temp)
+		
+		parent1 = parent1Temp if parent1_fitness > parent2_fitness else parent2Temp
+
+		parent1Temp, parent2Temp = random.choices(population, k=2)
+		parent1_fitness = self.calc_fitness(parent1Temp)
+		parent2_fitness = self.calc_fparent1_fitness = self.calc_fitness(parent2Temp)
+		
+		parent2 = parent1Temp if parent1_fitness > parent2_fitness else parent2Temp
+		
+		return parent1, parent2
+		
+	def parentSelection2(self, population):
+		best_individual = []
+		best_fitness = len(population[0])
+		for individual in population:
+			fitness = self.calc_fparent1_fitness = self.calc_fitness(individual)
+			if fitness < best_fitness:
+				best_individual = individual
+				best_fitness = fitness
+		
+		return best_individual, best_individual
+
+	def crossover(self, parent1, parent2):
+		cross_point = random.randint(0, len(parent1))
+		child1 = []
+		# child2 = []
+		child1.extend(parent1[:cross_point])
+		child1.extend(parent2[cross_point:])
+		# child2.extend(parent2[:cross_point])
+		# child2.extend(parent1[cross_point:])
+		
+		return child1
+
+	def mutation1(self, individual):
+		all_colors = set(individual)
+		for vertex in range(len(individual)):
+			adjacent_colors = set()
+			for neighbohr in self.graph[str(vertex)]:
+				adjacent_colors.add(individual[int(neighbohr)])
+				if(individual[vertex] == individual[int(neighbohr)]):
+					valid_colors = all_colors.difference(adjacent_colors)
+					new_color = random.choice(list(valid_colors))
+					individual[vertex] = new_color
+		return individual
+
+	def mutation2(self, individual):
+		all_colors = set(individual)
+		for vertex in range(len(individual)):
+			for neighbohr in self.graph[str(vertex)]:
+				if(individual[vertex] == individual[int(neighbohr)]):
+					new_color = random.choice(list(all_colors))
+					individual[vertex] = new_color
+		return individual
+		
+	def calc_fitness(self, individual):
+		broken_restrictions = 0
+		for vertex in range(len(individual)):
+			individual_color = individual[vertex]
+			for neighbohr in self.graph[str(vertex)]:
+				if(individual_color == individual[int(neighbohr)]):
+					broken_restrictions += 1
+
+		return broken_restrictions
+
+	def gen_first_generation(self, population_size, vertices_number):
+		"""
+		Returns a population of solutions.
+
+		Complexity: O(n*v) where n is the population size and v is the number of vertices.
+
+		Args:
+			population_size: The number of solutions to be generated.
+			vertices_number: The number of vertices of the graph.
+
+		Returns:
+			population: A random population with the specified size.
+		"""
+		population = []
+
+		for _ in range(population_size):
+			solution = [random.randint(0, vertices_number - 1) for _ in range(vertices_number)]
+			population.append(solution)
+
+		return population
