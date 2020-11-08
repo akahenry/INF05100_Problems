@@ -360,8 +360,13 @@ class GeneticAlgorithm2:
 				population_fitness.append([fitness, p])
   
 			new_population = []
-			sorted_fitness = sorted(population_fitness, key = lambda x: x[0])
-			print('Best so far = {}'.format(sorted_fitness[0]))
+			sorted_fitness = sorted(population_fitness, key = lambda x: (x[0], len(set(x[1]))))
+			# print('Best so far = {}'.format(sorted_fitness[0]))
+			sum = 0
+			for s in sorted_fitness:
+				if(s[0] == 0):
+					sum += 1
+			# print(sum)
 			best_individuals = [sorted_fitness[i][1] for i in range(len(population) // 2)]
 			new_population = best_individuals[:]
 			if(sorted_fitness[0][0] >= 4):
@@ -445,10 +450,9 @@ class GeneticAlgorithm2:
 			for neighbohr in self.graph[str(vertex)]:
 				if(individual_color == individual[int(neighbohr)]):
 					broken_restrictions += 1
-		
-		number_of_colors = len(set(individual))
+		# number_of_colors = len(set(individual))
 
-		return number_of_colors + (broken_restrictions + self.num_vertices)
+		return broken_restrictions
 
 	def gen_first_generation(self, population_size, vertices_number):
 		"""
