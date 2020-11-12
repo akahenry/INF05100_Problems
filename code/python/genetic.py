@@ -3,7 +3,7 @@ import copy
 import numpy as np
 from pprint import pprint
 from typing import List, Tuple, Dict
-from math import ceil
+from math import ceil, remainder
 from hashlib import sha1
 from enum import Enum
 
@@ -327,21 +327,23 @@ def first_generation(population_size, vertices_number, change_percentual, base_s
 	return population
 
 class GeneticAlgorithm2:
-	def __init__(self, max_iterations: int, population_size: int, rng_seed: int, graph):
+	def __init__(self, population_size: int, rng_seed: int, graph):
 
 		self.graph = graph
-		self.max_iterations = max_iterations
 		self.num_vertices = len(graph.keys())
-		self.elite_size = population_size // 2
 
 		if population_size > 0:
 			self.population_size = population_size	
+			self.elite_size = population_size // 2
 		else: 
 			raise Exception('Population size must be greater than 0.')
 
 		self.seed = rng_seed
 		random.seed(self.seed)
 		np.random.seed(self.seed)
+
+		self.random1 = np.random.RandomState(rng_seed)
+		self.random2 = np.random.RandomState(rng_seed * 2 + rng_seed // 2)
 
 	def run(self, max_iterations: int) -> Dict[str, int]:
 		"""
@@ -352,7 +354,7 @@ class GeneticAlgorithm2:
 		population = self.gen_first_generation(self.population_size, self.num_vertices)
 
 		for iteration in range(max_iterations):
-			print(f'Iteration: {iteration}')
+			# print(f'Iteration: {iteration}')
 
 			population_fitness = []
 			for p in population:
@@ -362,65 +364,84 @@ class GeneticAlgorithm2:
 			new_population = []
 			sorted_fitness = sorted(population_fitness, key = lambda x: (x[0], len(set(x[1]))))
 			# print('Best so far = {}'.format(sorted_fitness[0]))
-			sum = 0
-			for s in sorted_fitness:
-				if(s[0] == 0):
-					sum += 1
-			# print(sum)
-			best_individuals = [sorted_fitness[i][1] for i in range(len(population) // 2)]
-			new_population = best_individuals[:]
-			if(sorted_fitness[0][0] >= 4):
-					parent1, parent2 = self.parentSelection1(best_individuals)
-					child = self.crossover(parent1, parent2)
-					child = self.mutation1(child)
-					new_population.append(child)
-			else:
-					parent1, parent2 = self.parentSelection2(best_individuals)
-					child = self.crossover(parent1, parent2)
-					child = self.mutation2(child)
-					new_population.append(child)
+			# print('Best so far = {}'.format(len(set(sorted_fitness[0][1]))))
 
-			new_population.extend(self.gen_first_generation(len(population) // 2 - 1, self.num_vertices))
-			population = new_population[:]
+			# sum = 0
+			# numero de individuos que não quebram regras
+			# for s in sorted_fitness:
+			# 	if(s[0] == 0):
+			# 		sum += 1
+			# print(sum)
+
+			best_individuals = [sorted_fitness[i][1] for i in range(self.elite_size)]
+			if(iteration == 0 or iteration == max_iterations - 1):
+				print(f'Iteration: {iteration}')
+				print(sorted_fitness[0])
+
+			new_population = list(best_individuals)
+			# if(sorted_fitness[0][0] >= 4):
+			parent1, parent2 = self.parentSelection1(new_population)
+			# if(iteration <= 10):
+			# 	print("ITERATION {} PARENT1 = {} PARENT2 = {}".format(iteration, parent1, parent2))
+			child1, child2 = self.crossover(parent1, parent2)
+			child1 = self.mutation1(child1)
+			child2 = self.mutation1(child2)
+			new_population.append(child1)
+			new_population.append(child2)
+			# else:
+			# 		parent1, parent2 = self.parentSelection2(new_population)
+			# 		if(iteration <= 10):
+			# 			print("ITERATION {} PARENT1 = {} PARENT2 = {}".format(iteration, parent1, parent2))
+			# 		child1 = self.crossover(parent1, parent2)
+			# 		child1 = self.mutation2(child1)
+			# 		# child2 = self.mutation2(child2)
+			# 		new_population.append(child1)
+			# 		# new_population.append(child2)
+
+			new_population.extend(self.gen_first_generation(self.elite_size, self.num_vertices))
+			population = list(new_population)
+
+		print(len(set(sorted_fitness[0][1])))
 
 		return len(set(sorted_fitness[0][1]))
 
 	def parentSelection1(self, population):
-		parent1Temp, parent2Temp = random.choices(population, k=2)
+		parent1Temp_index, parent2Temp_index = self.random1.choice(len(population), 2)
+		# print("CHOICES 1 = {} {}".format(parent1Temp_index, parent2Temp_index))
+		parent1Temp = population[parent1Temp_index]
+		parent2Temp = population[parent2Temp_index]
 		parent1_fitness = self.calc_fitness(parent1Temp)
-		parent2_fitness = self.calc_fparent1_fitness = self.calc_fitness(parent2Temp)
-		
+		parent2_fitness = self.calc_fitness(parent2Temp)
+
 		parent1 = parent1Temp if parent1_fitness > parent2_fitness else parent2Temp
 
-		parent1Temp, parent2Temp = random.choices(population, k=2)
+		parent1Temp_index, parent2Temp_index = self.random2.choice(len(population), 2)
+		# print("CHOICES 2 = {} {}".format(parent1Temp_index, parent2Temp_index))
+		parent1Temp = population[parent1Temp_index]
+		parent2Temp = population[parent2Temp_index]
 		parent1_fitness = self.calc_fitness(parent1Temp)
-		parent2_fitness = self.calc_fparent1_fitness = self.calc_fitness(parent2Temp)
+		parent2_fitness = self.calc_fitness(parent2Temp)
 		
 		parent2 = parent1Temp if parent1_fitness > parent2_fitness else parent2Temp
 		
 		return parent1, parent2
 		
 	def parentSelection2(self, population):
-		best_individual = []
-		best_fitness = len(population[0])
-		for individual in population:
-			fitness = self.calc_fparent1_fitness = self.calc_fitness(individual)
-			if fitness < best_fitness:
-				best_individual = individual
-				best_fitness = fitness
-		
-		return best_individual, best_individual
+		best_individual = population[0]
+		second_best_individual = population[1]
+
+		return best_individual, second_best_individual
 
 	def crossover(self, parent1, parent2):
-		cross_point = random.randint(0, len(parent1))
+		cross_point = self.random1.randint(0, len(parent1))
 		child1 = []
-		# child2 = []
+		child2 = []
 		child1.extend(parent1[:cross_point])
 		child1.extend(parent2[cross_point:])
-		# child2.extend(parent2[:cross_point])
-		# child2.extend(parent1[cross_point:])
+		child2.extend(parent2[:cross_point])
+		child2.extend(parent1[cross_point:])
 		
-		return child1
+		return child1, child2
 
 	def mutation1(self, individual):
 		all_colors = set(individual)
@@ -428,19 +449,25 @@ class GeneticAlgorithm2:
 			adjacent_colors = set()
 			for neighbohr in self.graph[str(vertex)]:
 				adjacent_colors.add(individual[int(neighbohr)])
-				if(individual[vertex] == individual[int(neighbohr)]):
-					valid_colors = all_colors.difference(adjacent_colors)
-					new_color = random.choice(list(valid_colors))
-					individual[vertex] = new_color
+			if(individual[vertex] in adjacent_colors):
+				valid_colors = all_colors.difference(adjacent_colors)
+				colors_list = list(valid_colors)
+				new_color_index = self.random1.choice(len(colors_list))
+				new_color = colors_list[new_color_index]
+				individual[vertex] = new_color
 		return individual
 
 	def mutation2(self, individual):
 		all_colors = set(individual)
 		for vertex in range(len(individual)):
+			adjacent_colors = set()
 			for neighbohr in self.graph[str(vertex)]:
-				if(individual[vertex] == individual[int(neighbohr)]):
-					new_color = random.choice(list(all_colors))
-					individual[vertex] = new_color
+				adjacent_colors.add(individual[int(neighbohr)])
+			if(individual[vertex] in adjacent_colors):
+				colors_list = list(all_colors)
+				new_color_index = self.random1.choice(len(colors_list))
+				new_color = colors_list[new_color_index]
+				individual[vertex] = new_color
 		return individual
 		
 	def calc_fitness(self, individual):
@@ -470,7 +497,7 @@ class GeneticAlgorithm2:
 		population = []
 
 		for _ in range(population_size):
-			solution = [random.randint(0, vertices_number - 1) for _ in range(vertices_number)]
+			solution = [self.random1.randint(0, vertices_number - 1) for _ in range(vertices_number)]
 			population.append(solution)
 
 		return population

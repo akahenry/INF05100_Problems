@@ -41,7 +41,7 @@ def main(args):
     # genetic = GeneticAlgorithm(initial_solution=None, solution_size=int(num_vertices), elite_size=10, mutation_chance=0.5,
     #                            population_size=1000, rng_seed=seed, fitness_function=fitness, order=GeneticAlgorithm.MINIMIZE, graph=graph, num_vertices=int(num_vertices))
     
-    genetic2 = GeneticAlgorithm2(max_iterations=10000, population_size=50, rng_seed=seed, graph=graph)
+    genetic2 = GeneticAlgorithm2(population_size=50, rng_seed=seed, graph=graph)
 
     start = time.perf_counter_ns()
     # genetic.run(max_iterations=500, crossover_type=CrossoverMethod.UNIFORM_CROSSOVER)
