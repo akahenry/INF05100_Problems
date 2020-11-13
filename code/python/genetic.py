@@ -331,6 +331,7 @@ class GeneticAlgorithm2:
 
 		self.graph = graph
 		self.num_vertices = len(graph.keys())
+		self.max_colors = 1
 
 		if population_size > 0:
 			self.population_size = population_size	
@@ -349,58 +350,57 @@ class GeneticAlgorithm2:
 		"""
 		Returns the best solution found after all iterations.
 		"""
-  
-		print(self.population_size, self.num_vertices)
+
 		population = self.gen_first_generation(self.population_size, self.num_vertices)
 
 		for iteration in range(max_iterations):
-			# print(f'Iteration: {iteration}')
+			print(f'Iteration: {iteration}')
 
 			population_fitness = []
+			sorted_fitness = []
+
 			for p in population:
 				fitness = self.calc_fitness(p)
 				population_fitness.append([fitness, p])
-  
+
 			new_population = []
+			# ascending sort by fitness value and number of colors used
 			sorted_fitness = sorted(population_fitness, key = lambda x: (x[0], len(set(x[1]))))
 			# print('Best so far = {}'.format(sorted_fitness[0]))
 			# print('Best so far = {}'.format(len(set(sorted_fitness[0][1]))))
 
-			# sum = 0
-			# numero de individuos que não quebram regras
-			# for s in sorted_fitness:
-			# 	if(s[0] == 0):
-			# 		sum += 1
-			# print(sum)
-
 			best_individuals = [sorted_fitness[i][1] for i in range(self.elite_size)]
-			if(iteration == 0 or iteration == max_iterations - 1):
-				print(f'Iteration: {iteration}')
-				print(sorted_fitness[0])
 
 			new_population = list(best_individuals)
-			# if(sorted_fitness[0][0] >= 4):
+
+			if(sorted_fitness[0][0] >= 4 and iteration % 50 == 0 ):
+				# if(sorted_fitness[0][0] >= 4):
+				self.max_colors += 1
+				print(self.max_colors)
+				print(sorted_fitness[0][0])
+			# if(sorted_fitness[0][0] == 0):
+			# 	print("solucao valida")
+			# 	print(sorted_fitness[0][1])
+			
 			parent1, parent2 = self.parentSelection1(new_population)
-			# if(iteration <= 10):
-			# 	print("ITERATION {} PARENT1 = {} PARENT2 = {}".format(iteration, parent1, parent2))
 			child1, child2 = self.crossover(parent1, parent2)
 			child1 = self.mutation1(child1)
 			child2 = self.mutation1(child2)
+
 			new_population.append(child1)
 			new_population.append(child2)
 			# else:
 			# 		parent1, parent2 = self.parentSelection2(new_population)
-			# 		if(iteration <= 10):
-			# 			print("ITERATION {} PARENT1 = {} PARENT2 = {}".format(iteration, parent1, parent2))
-			# 		child1 = self.crossover(parent1, parent2)
+			# 		child1, child2 = self.crossover(parent1, parent2)
 			# 		child1 = self.mutation2(child1)
-			# 		# child2 = self.mutation2(child2)
+			# 		child2 = self.mutation2(child2)
 			# 		new_population.append(child1)
-			# 		# new_population.append(child2)
+			# 		new_population.append(child2)
 
 			new_population.extend(self.gen_first_generation(self.elite_size, self.num_vertices))
 			population = list(new_population)
 
+		print(sorted_fitness[0][0])
 		print(len(set(sorted_fitness[0][1])))
 
 		return len(set(sorted_fitness[0][1]))
@@ -408,6 +408,7 @@ class GeneticAlgorithm2:
 	def parentSelection1(self, population):
 		parent1Temp_index, parent2Temp_index = self.random1.choice(len(population), 2)
 		# print("CHOICES 1 = {} {}".format(parent1Temp_index, parent2Temp_index))
+		# shuffled_pop = random.sample(population, len(population))
 		parent1Temp = population[parent1Temp_index]
 		parent2Temp = population[parent2Temp_index]
 		parent1_fitness = self.calc_fitness(parent1Temp)
@@ -417,6 +418,7 @@ class GeneticAlgorithm2:
 
 		parent1Temp_index, parent2Temp_index = self.random2.choice(len(population), 2)
 		# print("CHOICES 2 = {} {}".format(parent1Temp_index, parent2Temp_index))
+		# shuffled_pop = random.sample(population, len(population))
 		parent1Temp = population[parent1Temp_index]
 		parent2Temp = population[parent2Temp_index]
 		parent1_fitness = self.calc_fitness(parent1Temp)
@@ -428,12 +430,12 @@ class GeneticAlgorithm2:
 		
 	def parentSelection2(self, population):
 		best_individual = population[0]
-		second_best_individual = population[1]
 
-		return best_individual, second_best_individual
+		return best_individual, best_individual
 
 	def crossover(self, parent1, parent2):
 		cross_point = self.random1.randint(0, len(parent1))
+		# print("crosspoint = {}".format(cross_point))
 		child1 = []
 		child2 = []
 		child1.extend(parent1[:cross_point])
@@ -444,18 +446,23 @@ class GeneticAlgorithm2:
 		return child1, child2
 
 	def mutation1(self, individual):
-		all_colors = set(individual)
-		for vertex in range(len(individual)):
+		individual_copy = list(individual)
+		all_colors = set(individual_copy)
+		for vertex in range(len(individual_copy)):
+			all_colors = set(individual_copy)
 			adjacent_colors = set()
 			for neighbohr in self.graph[str(vertex)]:
-				adjacent_colors.add(individual[int(neighbohr)])
-			if(individual[vertex] in adjacent_colors):
-				valid_colors = all_colors.difference(adjacent_colors)
-				colors_list = list(valid_colors)
-				new_color_index = self.random1.choice(len(colors_list))
-				new_color = colors_list[new_color_index]
-				individual[vertex] = new_color
-		return individual
+				adjacent_colors.add(individual_copy[int(neighbohr)])
+			for neighbohr in self.graph[str(vertex)]:
+				if(individual_copy[vertex] == individual_copy[int(neighbohr)]):
+					valid_colors = all_colors.difference(adjacent_colors)
+					if(len(valid_colors) == 0):
+						return individual_copy
+					colors_list = list(valid_colors)
+					new_color_index = self.random1.choice(len(colors_list))
+					new_color = colors_list[new_color_index]
+					individual_copy[vertex] = new_color
+		return individual_copy
 
 	def mutation2(self, individual):
 		all_colors = set(individual)
@@ -463,11 +470,12 @@ class GeneticAlgorithm2:
 			adjacent_colors = set()
 			for neighbohr in self.graph[str(vertex)]:
 				adjacent_colors.add(individual[int(neighbohr)])
-			if(individual[vertex] in adjacent_colors):
-				colors_list = list(all_colors)
-				new_color_index = self.random1.choice(len(colors_list))
-				new_color = colors_list[new_color_index]
-				individual[vertex] = new_color
+			for neighbohr in self.graph[str(vertex)]:
+				if(individual[vertex] == individual[int(neighbohr)]):
+					colors_list = list(all_colors)
+					new_color_index = self.random1.choice(len(colors_list))
+					new_color = colors_list[new_color_index]
+					individual[vertex] = new_color
 		return individual
 		
 	def calc_fitness(self, individual):
@@ -479,7 +487,7 @@ class GeneticAlgorithm2:
 					broken_restrictions += 1
 		# number_of_colors = len(set(individual))
 
-		return broken_restrictions
+		return broken_restrictions // 2
 
 	def gen_first_generation(self, population_size, vertices_number):
 		"""
@@ -490,14 +498,13 @@ class GeneticAlgorithm2:
 		Args:
 			population_size: The number of solutions to be generated.
 			vertices_number: The number of vertices of the graph.
-
 		Returns:
 			population: A random population with the specified size.
 		"""
 		population = []
 
 		for _ in range(population_size):
-			solution = [self.random1.randint(0, vertices_number - 1) for _ in range(vertices_number)]
+			solution = [self.random1.randint(0, self.max_colors) for _ in range(vertices_number)]
 			population.append(solution)
 
 		return population
