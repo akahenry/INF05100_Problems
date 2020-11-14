@@ -11,6 +11,7 @@ from typing import Dict, List
 def main(args):
     filename = args.file[0].name
     seed = args.seed[0]
+    csv_filename = args.output[0]
 
     graph = {}
     prev_vertex = -1
@@ -44,7 +45,7 @@ def main(args):
     genetic2 = GeneticAlgorithm2(population_size=50, rng_seed=seed, graph=graph)
 
     start = time.perf_counter_ns()
-    # genetic.run(max_iterations=500, crossover_type=CrossoverMethod.UNIFORM_CROSSOVER)
+    # genetic.run(max_iterations=500, crossover_type=CrossoverMethod.UNIFORM_CROSSOVER, csv_filename=csv_filename)
     num_colors = genetic2.run(max_iterations=2000)
     print("num colors = {}".format(num_colors))
     end = time.perf_counter_ns()
@@ -90,6 +91,10 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--seed', type=int, nargs=1,
                         help='an integer representing the seed for random number generation',
                         required=True)
+    
+    parser.add_argument('-o', '--output', type=str, nargs=1,
+                        help='a string representing the .csv filename to be written',
+                        required=False)
 
     args = parser.parse_args()
 

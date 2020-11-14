@@ -6,6 +6,7 @@ from typing import List, Tuple, Dict
 from math import ceil, remainder
 from hashlib import sha1
 from enum import Enum
+import csv 
 
 class CrossoverMethod(Enum):
 	UNIQUE_POINT_CROSSOVER = 1
@@ -143,7 +144,7 @@ class GeneticAlgorithm:
 		self.fitness_function = fitness_function
 		self.default_fitness_args = kwargs
 
-	def run(self, max_iterations: int, crossover_type: CrossoverMethod, **kwargs) -> Dict[str, int]:
+	def run(self, max_iterations: int, crossover_type: CrossoverMethod, csv_filename=None, **kwargs) -> Dict[str, int]:
 		"""
 		Returns the best solution found after all iterations.
 
@@ -168,6 +169,9 @@ class GeneticAlgorithm:
 		Returns:
 			solution: The best found solution.
 		"""
+		csv_file = open(csv_filename, 'w', newline='')
+		csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+		csv_writer.writerow(['best', 'mean'])
 		population = first_generation(self.population_size, self.solution_size, 0, self.initial_solution)
 
 		for iteration in range(max_iterations):
@@ -177,8 +181,12 @@ class GeneticAlgorithm:
 			for solution in population:
 				values.append((self.fitness_function(solution, **self.default_fitness_args), solution))
 
-			elite = [x for _, x in sorted(values, key=lambda x: x[0], reverse=self.order)]
-			print(f'Best value: {sorted(values,	key=lambda x: x[0], reverse=self.order)[0][0]}')
+			elite_with_values = sorted(values, key=lambda x: x[0], reverse=self.order)
+			elite = [x for _, x in elite_with_values]
+			print(f'Best value: {elite_with_values[0][0]}')
+			print(f'Mean: {sum([x for x, _ in elite_with_values])/float(self.population_size)}')
+			csv_writer.writerow([elite_with_values[0][0], sum([x for x, _ in elite_with_values])/self.population_size])
+
 			parents = []
 			index = 0
 
