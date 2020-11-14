@@ -4,7 +4,7 @@ import argparse
 import sys
 import time
 
-from genetic import GeneticAlgorithm, CrossoverMethod
+from genetic import GeneticAlgorithm, CrossoverMethod, GeneticAlgorithm2
 from typing import Dict, List
 
 
@@ -39,11 +39,15 @@ def main(args):
                 else:
                     graph[vertex2] = [vertex1]
 
-    genetic = GeneticAlgorithm(initial_solution=None, solution_size=int(num_vertices), elite_size=10, mutation_chance=0.5,
-                               population_size=1000, rng_seed=seed, fitness_function=fitness, order=GeneticAlgorithm.MINIMIZE, graph=graph, num_vertices=int(num_vertices))
+    # genetic = GeneticAlgorithm(initial_solution=None, solution_size=int(num_vertices), elite_size=10, mutation_chance=0.5,
+    #                            population_size=1000, rng_seed=seed, fitness_function=fitness, order=GeneticAlgorithm.MINIMIZE, graph=graph, num_vertices=int(num_vertices))
+    
+    genetic2 = GeneticAlgorithm2(population_size=50, rng_seed=seed, graph=graph)
 
     start = time.perf_counter_ns()
-    genetic.run(max_iterations=500, crossover_type=CrossoverMethod.UNIFORM_CROSSOVER, csv_filename=csv_filename)
+    # genetic.run(max_iterations=500, crossover_type=CrossoverMethod.UNIFORM_CROSSOVER, csv_filename=csv_filename)
+    num_colors = genetic2.run(max_iterations=2000)
+    print("num colors = {}".format(num_colors))
     end = time.perf_counter_ns()
     print(f'EXECUTION TIME: {(end-start)/(10**9)} seconds.')
 
