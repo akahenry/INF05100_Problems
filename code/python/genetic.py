@@ -354,12 +354,16 @@ class GeneticAlgorithm2:
 		self.random1 = np.random.RandomState(rng_seed)
 		self.random2 = np.random.RandomState(rng_seed * 2 + rng_seed // 2)
 
-	def run(self, max_iterations: int) -> Dict[str, int]:
+	def run(self, max_iterations: int, csv_filename: str = 'csv_file') -> Dict[str, int]:
 		"""
 		Returns the best solution found after all iterations.
 		"""
-
+		csv_file = open(csv_filename, 'w', newline='')
+		csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+		csv_writer.writerow(['best', 'mean'])
 		population = self.gen_first_generation(self.population_size, self.num_vertices)
+		only_valid = False
+		best_so_far = self.num_vertices
 
 		for iteration in range(max_iterations):
 			print(f'Iteration: {iteration}')
@@ -374,8 +378,9 @@ class GeneticAlgorithm2:
 			new_population = []
 			# ascending sort by fitness value and number of colors used
 			sorted_fitness = sorted(population_fitness, key = lambda x: (x[0], len(set(x[1]))))
+
+			csv_writer.writerow([sorted_fitness[0][0], sum([x for x, _ in sorted_fitness])/self.population_size])
 			# print('Best so far = {}'.format(sorted_fitness[0]))
-			# print('Best so far = {}'.format(len(set(sorted_fitness[0][1]))))
 
 			best_individuals = [sorted_fitness[i][1] for i in range(self.elite_size)]
 
@@ -411,7 +416,7 @@ class GeneticAlgorithm2:
 		print(sorted_fitness[0][0])
 		print(len(set(sorted_fitness[0][1])))
 
-		return len(set(sorted_fitness[0][1]))
+		return len(set(sorted_fitness[0][1])), sorted_fitness[0][1]
 
 	def parentSelection1(self, population):
 		parent1Temp_index, parent2Temp_index = self.random1.choice(len(population), 2)

@@ -6,12 +6,14 @@ import time
 
 from genetic import GeneticAlgorithm, CrossoverMethod, GeneticAlgorithm2
 from typing import Dict, List
+from math import floor
 
 
 def main(args):
     filename = args.file[0].name
     seed = args.seed[0]
     csv_filename = args.output[0]
+    color_filename = args.color[0]
 
     graph = {}
     prev_vertex = -1
@@ -44,12 +46,19 @@ def main(args):
     
     genetic2 = GeneticAlgorithm2(population_size=50, rng_seed=seed, graph=graph)
 
+    max_iterations = floor(((int(num_edges))*(-4000) + (16914000))/537.0)
+    
     start = time.perf_counter_ns()
     # genetic.run(max_iterations=500, crossover_type=CrossoverMethod.UNIFORM_CROSSOVER, csv_filename=csv_filename)
-    num_colors = genetic2.run(max_iterations=2000)
+    num_colors, solution = genetic2.run(max_iterations=max_iterations, csv_filename=csv_filename)
     print("num colors = {}".format(num_colors))
     end = time.perf_counter_ns()
     print(f'EXECUTION TIME: {(end-start)/(10**9)} seconds.')
+
+    if genetic2.calc_fitness(solution) != 0:
+        num_colors = 'UNDEFINED'
+
+    open(color_filename, 'w').write(f'color={num_colors}, time={(end-start)/(10**9)}')
 
 
 def fitness(solution: Dict[str, int], graph: Dict[str, List[str]], num_vertices: int) -> int:
@@ -72,7 +81,7 @@ def fitness(solution: Dict[str, int], graph: Dict[str, List[str]], num_vertices:
 
     for vertex in solution:
         color_set[solution[vertex]] = True
-        for neighbor in graph[vertex]:
+        for neighbor in graph[str(vertex)]:
             if solution[neighbor] == solution[vertex]:
                 return num_vertices*2
 
@@ -95,6 +104,10 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output', type=str, nargs=1,
                         help='a string representing the .csv filename to be written',
                         required=False)
+
+    parser.add_argument('-c', '--color', type=str, nargs=1,
+                        help='a string representing the .color filename to be written with the color and the time',
+                        required=True)
 
     args = parser.parse_args()
 
