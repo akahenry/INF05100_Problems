@@ -6,7 +6,7 @@ import time
 
 from genetic import GeneticAlgorithm, CrossoverMethod, GeneticAlgorithm2
 from typing import Dict, List
-from math import floor
+from math import floor, sqrt
 
 
 def main(args):
@@ -46,7 +46,9 @@ def main(args):
     
     genetic2 = GeneticAlgorithm2(population_size=50, rng_seed=seed, graph=graph)
 
-    max_iterations = floor(((int(num_edges))*(-4000) + (16914000))/537.0)
+    num_edges = int(num_edges)
+
+    max_iterations = max(min(floor((16985.0/2059904.0)*(num_edges ** 2) - (574505.0/13552.0)*num_edges + (62282450.0/1463.0)), 37000), 4000)
     
     start = time.perf_counter_ns()
     # genetic.run(max_iterations=500, crossover_type=CrossoverMethod.UNIFORM_CROSSOVER, csv_filename=csv_filename)

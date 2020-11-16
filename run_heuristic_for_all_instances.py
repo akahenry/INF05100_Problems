@@ -17,7 +17,7 @@ class myThread (threading.Thread):
       print("Exiting " + self.name)
 
 def exec_python_main(file):
-    for seed in range(5):
+    for seed in range(10):
         print(f'Executing file {file} with seed {seed}.\n')
         start = time.perf_counter_ns()
         system(f"python code/python/main.py -f {mypath + '/' + file} -o code/python/results/{file.replace('.col', f'_seed_{seed}.csv')} -c code/python/results/{file.replace('.col', f'_seed_{seed}.color')} -s {seed}")
