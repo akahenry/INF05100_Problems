@@ -14,6 +14,8 @@ def main(args):
     seed = args.seed[0]
     csv_filename = args.output[0] if args.output else 'csv_file.csv'
     color_filename = args.color[0] if args.color else 'color_file.color'
+    input_filename = args.input[0].name if args.input else None
+    initial_solution = None
 
     graph = {}
     prev_vertex = -1
@@ -41,10 +43,18 @@ def main(args):
                 else:
                     graph[vertex2] = [vertex1]
 
+    if input_filename:
+        with open(input_filename, 'r') as f:
+            initial_solution = [] * int(num_vertices)
+            index = 0
+            for line in f:
+                initial_solution[index] = int(line)
+                index += 1
+
     # genetic = GeneticAlgorithm(initial_solution=None, solution_size=int(num_vertices), elite_size=10, mutation_chance=0.5,
     #                            population_size=1000, rng_seed=seed, fitness_function=fitness, order=GeneticAlgorithm.MINIMIZE, graph=graph, num_vertices=int(num_vertices))
     
-    genetic2 = GeneticAlgorithm2(population_size=50, rng_seed=seed, graph=graph)
+    genetic2 = GeneticAlgorithm2(population_size=50, rng_seed=seed, graph=graph, initial_solution=initial_solution)
 
     num_edges = int(num_edges)
 
@@ -109,6 +119,10 @@ if __name__ == "__main__":
 
     parser.add_argument('-c', '--color', type=str, nargs=1,
                         help='a string representing the .color filename to be written with the color and the time',
+                        required=False)
+
+    parser.add_argument('-i', '--input', type=open, nargs=1,
+                        help='a file containing a initial solution',
                         required=False)
 
     args = parser.parse_args()

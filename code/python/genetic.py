@@ -335,7 +335,7 @@ def first_generation(population_size, vertices_number, change_percentual, base_s
 	return population
 
 class GeneticAlgorithm2:
-	def __init__(self, population_size: int, rng_seed: int, graph):
+	def __init__(self, population_size: int, rng_seed: int, graph, initial_solution = None):
 
 		self.graph = graph
 		self.num_vertices = len(graph.keys())
@@ -353,6 +353,8 @@ class GeneticAlgorithm2:
 
 		self.random1 = np.random.RandomState(rng_seed)
 		self.random2 = np.random.RandomState(rng_seed * 2 + rng_seed // 2)
+
+		self.initial_solution = initial_solution
 
 	def run(self, max_iterations: int, csv_filename: str = 'csv_file') -> Dict[str, int]:
 		"""
@@ -502,7 +504,7 @@ class GeneticAlgorithm2:
 
 		return broken_restrictions // 2
 
-	def gen_first_generation(self, population_size, vertices_number):
+	def gen_first_generation(self, population_size, vertices_number, change_percentual=0.5):
 		"""
 		Returns a population of solutions.
 
@@ -515,9 +517,19 @@ class GeneticAlgorithm2:
 			population: A random population with the specified size.
 		"""
 		population = []
+		base_solution = self.initial_solution
 
-		for _ in range(population_size):
-			solution = [self.random1.randint(0, self.max_colors) for _ in range(vertices_number)]
-			population.append(solution)
+		if not base_solution:
+			for _ in range(population_size):
+				solution = [self.random1.randint(0, self.max_colors) for _ in range(vertices_number)]
+				population.append(solution)
+		else:
+			for _ in range(population_size):
+				solution = [0] * vertices_number
+
+				for vertex in range(vertices_number):
+					solution[vertex] = min(int(np.random.normal(loc=base_solution[vertex], scale=base_solution[vertex]*change_percentual)), self.max_colors)
+
+				population.append(solution)
 
 		return population
