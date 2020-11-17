@@ -19,20 +19,23 @@ args = parser.parse_args()
 filename = args.file[0]
 output = args.output[0]
 
-for i in range(10):
-    new_filename = filename + f'_seed_{i}.csv'
+new_filename = filename + f'_seed_{0}.csv'
 
-    with open(new_filename, 'r') as f:
-        index = 0
-        lines = len(f.readlines()) - 1
-        axisBest = [0] * lines
-        axisMean = [0] * lines
+with open(new_filename, 'r') as f:
+    lines = len(f.readlines()) - 1
+    axisBest = [0] * lines
+    axisMean = [0] * lines
+
+for i in range(10):
+    new_filename = filename + f'_seed_{0}.csv'
+    index = 0
         
     with open(new_filename, 'r') as f:
         for line in f:
             values = line.split(',')
             if values[0] == 'best' or values[1] == 'mean':
                 continue
+
             axisBest[index] = float(values[0]) + axisBest[index]
             axisMean[index] = float(values[1]) + axisMean[index]
             index += 1
