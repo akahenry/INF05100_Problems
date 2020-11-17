@@ -12,8 +12,8 @@ from math import floor, sqrt
 def main(args):
     filename = args.file[0].name
     seed = args.seed[0]
-    csv_filename = args.output[0]
-    color_filename = args.color[0]
+    csv_filename = args.output[0] if args.output else 'csv_file.csv'
+    color_filename = args.color[0] if args.color else 'color_file.color'
 
     graph = {}
     prev_vertex = -1
@@ -109,7 +109,7 @@ if __name__ == "__main__":
 
     parser.add_argument('-c', '--color', type=str, nargs=1,
                         help='a string representing the .color filename to be written with the color and the time',
-                        required=True)
+                        required=False)
 
     args = parser.parse_args()
 
